@@ -24,6 +24,7 @@ permissions:
 jobs:
   detect-version:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     container:
       image: codeberg.org/librewolf/bsys6:dind
     env:
@@ -58,6 +59,7 @@ jobs:
   build-windows-portable:
     needs: detect-version
     runs-on: ubuntu-latest
+    timeout-minutes: 240
     container:
       image: codeberg.org/librewolf/bsys6:dind
     env:
@@ -92,8 +94,8 @@ jobs:
 
       - name: Build Windows x64 portable
         env:
-          MOZ_MAKE_FLAGS: -j2
-          CARGO_BUILD_JOBS: 2
+          MOZ_MAKE_FLAGS: -j1
+          CARGO_BUILD_JOBS: 1
         run: |
           make test-windows
 
