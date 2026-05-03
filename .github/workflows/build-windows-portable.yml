@@ -94,6 +94,7 @@ jobs:
 
       - name: Build Windows x64 portable
         env:
+          CI_WINDOWS_LOW_MEM: 1
           MOZ_MAKE_FLAGS: -j1
           CARGO_BUILD_JOBS: 1
         run: |

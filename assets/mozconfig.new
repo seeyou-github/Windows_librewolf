@@ -26,6 +26,12 @@ ac_add_options --enable-bootstrap
 export MOZ_REQUIRE_SIGNING=
 export MOZILLA_OFFICIAL=1
 
+# Reduce peak memory usage for constrained CI runners.
+if test -n "$CI_WINDOWS_LOW_MEM"; then
+ac_add_options --disable-lto
+ac_add_options --disable-debug-symbols
+fi
+
 mk_add_options MOZ_CRASHREPORTER=0
 mk_add_options MOZ_DATA_REPORTING=0
 mk_add_options MOZ_SERVICES_HEALTHREPORT=0
