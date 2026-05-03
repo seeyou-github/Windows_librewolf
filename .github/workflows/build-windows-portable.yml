@@ -1,0 +1,101 @@
+name: Build Windows x64 Portable
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Firefox version channel to build
+        required: true
+        default: stable
+        type: choice
+        options:
+          - latest
+          - beta
+          - rc
+          - stable
+
+permissions:
+  contents: read
+
+jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    container:
+      image: codeberg.org/librewolf/bsys6:dind
+    outputs:
+      ff_version: ${{ steps.detect.outputs.ff_version }}
+      ff_channel: ${{ steps.detect.outputs.ff_channel }}
+      ff_build: ${{ steps.detect.outputs.ff_build }}
+      ff_beta_suffix: ${{ steps.detect.outputs.ff_beta_suffix }}
+      ff_display: ${{ steps.detect.outputs.ff_display }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get -y install curl jq
+
+      - name: Detect Firefox version
+        id: detect
+        shell: bash
+        run: |
+          chmod +x ./scripts/detect-firefox-version.sh
+          CHANNEL="${{ github.ref == 'refs/heads/beta' && 'latest' || github.event.inputs.version || 'stable' }}"
+          ./scripts/detect-firefox-version.sh --channel "$CHANNEL" > detect.out
+          cat detect.out
+          cat detect.out >> "$GITHUB_OUTPUT"
+
+  build-windows-portable:
+    needs: detect-version
+    runs-on: ubuntu-latest
+    container:
+      image: codeberg.org/librewolf/bsys6:dind
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get -y install --no-install-recommends build-essential curl jq make python3 python3-dev python3-pip wget unzip git pigz gnupg
+
+      - name: Setup version
+        run: |
+          echo "Building against: ${{ needs.detect-version.outputs.ff_display }}"
+          echo "${{ needs.detect-version.outputs.ff_version }}" > version
+
+      - name: Fetch Firefox source
+        run: |
+          make fetch \
+            FF_CHANNEL=${{ needs.detect-version.outputs.ff_channel }} \
+            FF_BUILD=${{ needs.detect-version.outputs.ff_build || 'build1' }} \
+            FF_BETA_SUFFIX=${{ needs.detect-version.outputs.ff_beta_suffix }}
+
+      - name: Check patchfail
+        run: |
+          sh -c "./scripts/check-patchfail.sh"
+
+      - name: Build Windows x64 portable
+        run: |
+          make test-windows
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: librewolf-windows-x64-portable
+          path: |
+            librewolf-*.zip
+            mozconfig.txt
+          if-no-files-found: error
+          retention-days: 7
