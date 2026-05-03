@@ -91,6 +91,9 @@ jobs:
           sh -c "./scripts/check-patchfail.sh"
 
       - name: Build Windows x64 portable
+        env:
+          MOZ_MAKE_FLAGS: -j2
+          CARGO_BUILD_JOBS: 2
         run: |
           make test-windows
 
