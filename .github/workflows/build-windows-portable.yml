@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: codeberg.org/librewolf/bsys6:dind
+    env:
+      HOME: /root
     outputs:
       ff_version: ${{ steps.detect.outputs.ff_version }}
       ff_channel: ${{ steps.detect.outputs.ff_channel }}
@@ -58,6 +60,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: codeberg.org/librewolf/bsys6:dind
+    env:
+      HOME: /root
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
